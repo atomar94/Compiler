@@ -39,4 +39,16 @@ public class MethodContext extends Context {
             return false;
         }
     }
+
+    // recursively verify this method.
+    public boolean distinct() {
+        for (int i = 0; i < identifiers.size(); i++) {
+            for (int j = i + 1; j < identifiers.size(); j++) {
+                if (identifiers.get(i).toString() == identifiers.get(j).toString()) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

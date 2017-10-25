@@ -25,12 +25,10 @@ public class ClassContext extends Context{
     }
 
     public boolean add(MethodContext c) {
-        //if methods.contains(c) return false because duplicate
         return methods.add(c);
     }
 
     public boolean add(IdentifierContext c) {
-        //if methods.contains(c) return false because duplicate
         return identifiers.add(c);
     }
 
@@ -52,5 +50,32 @@ public class ClassContext extends Context{
         else {
             return false;
         }
+    }
+
+    // recursively verify this class.
+    public boolean distinct() {
+        // check for duplicate identifiers
+        for (int i = 0; i < identifiers.size(); i++) {
+            for (int j = i + 1; j < identifiers.size(); j++) {
+                if (identifiers.get(i).toString() == identifiers.get(j).toString()) {
+                    return false;
+                }
+            }
+            if(!identifiers.get(i).distinct()) {
+                return false;
+            }
+        }
+        // check for duplicate methods
+        for (int i = 0; i < methods.size(); i++) {
+            for (int j = i + 1; j < methods.size(); j++) {
+                if (methods.get(i).toString() == methods.get(j).toString()) {
+                    return false;
+                }
+            }
+            if(!methods.get(i).distinct()) {
+                return false;
+            }
+        }
+        return true;
     }
 }

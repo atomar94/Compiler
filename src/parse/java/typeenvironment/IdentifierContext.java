@@ -14,4 +14,9 @@ public class IdentifierContext extends Context {
         else
             return false;
     }
+
+    // base case for recursive verification.
+    public boolean distinct() {
+        return true;
+    }
 }

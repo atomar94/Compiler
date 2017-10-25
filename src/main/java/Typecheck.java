@@ -48,6 +48,12 @@ public class Typecheck extends GJDepthFirst<Type, Map<String, Type>>{
             //System.out.println("Another Error");
         }
 
+        if (c.distinct()) {
+            System.out.println("Verified distinct declarations");
+        } else {
+            System.out.println("Declarations not distinct");
+        }
+
         // debug printouts
         ClassContext mcc = c.getMainClassContext();
         System.out.println("Main Class: " + mcc.toString());

@@ -41,4 +41,8 @@ public abstract class Context {
         System.out.println("Context::add(IdentifierContext)");
         return false;
     }
+
+    public boolean distinct() {
+        return false;
+    }
 }
