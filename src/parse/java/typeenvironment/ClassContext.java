@@ -10,7 +10,8 @@ public class ClassContext extends Context{
     List<IdentifierContext> identifiers;
     
     public ClassContext(String class_name) {
-        super(class_name);
+        // the name of this class is the type!
+        super(class_name, class_name);
         parent = null;
         this.methods = new ArrayList<MethodContext>();
         this.identifiers = new ArrayList<IdentifierContext>();
@@ -24,32 +25,60 @@ public class ClassContext extends Context{
         return identifiers;
     }
 
+    // class has a more complicated isTypeFailed because we want to 
+    // check the child methods. we dont have to, but we should for
+    // robustness.
+    public boolean isTypeFailed() {
+        if (typeCheckFailed) {
+            return true;
+        }
+        else {
+            // make sure the methods did fail and the error just
+            // didnt end up propagating upwards.
+            for (MethodContext m : methods) {
+                if (m.isTypeFailed()) {
+                    System.out.println("Method " + m.toString() + " fail");
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public boolean add(MethodContext c) {
+        c.setParent(this);
         return methods.add(c);
     }
 
     public boolean add(IdentifierContext c) {
+        c.setParent(this);
         return identifiers.add(c);
     }
 
-    public boolean find(String name) {
-        if (this.name == name) {
-            return true;
+    public String find(String name) {
+        // if we are tryingto find "this" then return the name of 
+        // this class.
+        if (name == "this") {
+            return this.name;
         }
+
         for (MethodContext m : methods) {
-            if (m.find(name))
-                return true;
+            if (name == m.toString()) {
+                return m.toType();
+            }
         }
+
+        String ret = "";
         for (IdentifierContext i : identifiers) {
-            if (i.find(name))
-                return true;
+            ret = i.find(name);
+            if (ret != "ERROR") {
+                return ret;
+            }
         }
-        if (parent != null) {
-            return parent.find(name);
-        }
-        else {
-            return false;
-        }
+
+        // couldnt find the identifier in this class context, and this is the
+        // highest context there is (until we check inheritance)
+        return "ERROR";
     }
 
     // recursively verify this class.

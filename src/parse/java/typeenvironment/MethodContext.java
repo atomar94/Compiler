@@ -6,13 +6,10 @@ import java.util.*;
 /** The typechecker for F.
 m*/
 public class MethodContext extends Context {
-    Context parent;
     List<IdentifierContext> identifiers;
-    
-    public MethodContext(String method_name) {
-        super(method_name);
-        //this.name = method_name;
-        parent = null;
+
+    public MethodContext(String method_name, String type) {
+        super(method_name, type);
         this.identifiers = new ArrayList<IdentifierContext>();
     }
 
@@ -21,23 +18,24 @@ public class MethodContext extends Context {
     }
 
     public boolean add(IdentifierContext c) {
-        //if methods.contains(c) return false because duplicate
+        c.setParent(this);
         return identifiers.add(c);
     }
 
-    public boolean find(String name) {
+    public String find(String name) {
         if (this.name == name)
-            return true;
+            return type;
+
         for (IdentifierContext c : identifiers){
-            if (c.find(name))
-                return true;
+            String ret = c.find(name);
+            if (ret != "ERROR")
+                return ret;
         }
+        // if our parent exists (it should) go search it.
         if (this.parent != null) {
             return this.parent.find(name);
         }
-        else {
-            return false;
-        }
+        return "ERROR";
     }
 
     // recursively verify this method.

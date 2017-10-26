@@ -53,6 +53,12 @@ public class Typecheck extends GJDepthFirst<Type, Map<String, Type>>{
         } else {
             System.out.println("Declarations not distinct");
         }
+        if (c.isTypeFailed()) {
+            System.out.println("Type Check failed");
+        }
+        else {
+            System.out.println("Type Check succeeded");
+        }
 
         // debug printouts
         ClassContext mcc = c.getMainClassContext();

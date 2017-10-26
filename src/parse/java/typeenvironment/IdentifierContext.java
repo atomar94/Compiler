@@ -4,15 +4,15 @@ package typeenvironment;
 m*/
 public class IdentifierContext extends Context {
     
-    public IdentifierContext(String id_name) {
-        super(id_name);
+    public IdentifierContext(String id_name, String type) {
+        super(id_name, type);
     }
 
-    public boolean find(String name) {
+    public String find(String name) {
         if (this.name == name)
-            return true;
+            return type;
         else
-            return false;
+            return "ERROR";
     }
 
     // base case for recursive verification.

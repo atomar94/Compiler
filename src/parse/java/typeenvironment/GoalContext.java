@@ -7,7 +7,7 @@ public class GoalContext extends Context {
     ClassContext mc;
 
     public GoalContext() {
-        super("");
+        super("", "");
         mc = null;
         classes = new ArrayList<ClassContext>();
     }
@@ -19,6 +19,20 @@ public class GoalContext extends Context {
             return true;
         }
         // we already got one of these! Throw an error or something.
+        return false;
+    }
+
+    // check that all of our classes type check.
+    public boolean isTypeFailed() {
+        if (mc.isTypeFailed()) {
+            System.out.println("Main class failed to typecheck.");
+            return true;
+        }
+        for (ClassContext c : classes) {
+            if (c.isTypeFailed()) {
+                return true;
+            }
+        }
         return false;
     }
 

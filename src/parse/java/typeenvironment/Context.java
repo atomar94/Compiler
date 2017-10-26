@@ -4,17 +4,40 @@ package typeenvironment;
 m*/
 public abstract class Context {
     String name;
+    String type;
+    Context parent;
+    boolean typeCheckFailed;
 
-    public Context(String name) {
+    public Context(String name, String type) {
         this.name = name;
+        this.type = type;
+        this.parent = null;
+        typeCheckFailed = false;
+    }
+
+    public void typeFailed() {
+        typeCheckFailed = true;
+    }
+
+    public boolean isTypeFailed() {
+        return typeCheckFailed;
+    }
+
+    public void setParent(Context parent) {
+        this.parent = parent;
     }
 
     public String toString() {
       return name;
     }
 
-    public boolean find(String name) {
-      return false;
+    public String toType() {
+        return type;
+    }
+
+    // return the type of the identifier
+    public String find(String name) {
+      return "ERROR";
     }
 
     public boolean add(Context c) {
