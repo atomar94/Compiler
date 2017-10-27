@@ -15,12 +15,29 @@ public class GoalContext extends Context {
 
     public boolean add(MainClassContext mc) {
         if (this.mc == null) {
+            System.out.println("Adding MainClassContext to GoalContext");
             this.mc = mc;
+            this.mc.setParent(this);
             return true;
         }
         // we already got one of these! Throw an error or something.
         return false;
     }
+
+    // see if an identifier exists within this context.
+    // Return null on fail.
+    public Context getChildContext(String name) {
+        for (ClassContext c : this.classes) {
+            if (c.toString() == name) {
+                return c;
+            }
+        }
+        if (this.name == "main") {
+            return mc;
+        }
+        return null;
+    }
+
 
     // check that all of our classes type check.
     public boolean isTypeFailed() {
@@ -40,17 +57,52 @@ public class GoalContext extends Context {
         return mc;
     }
 
+    // search all classes and if one matches then get the method context from it.
+    public MethodContext getClassMethodContext(String classname, String methodname) {
+        for (ClassContext c : classes) {
+            for (MethodContext m : c.methods) {
+                if (m.toString() == methodname) {
+                    System.out.println("Found " + classname + "." + methodname);
+                    return m;
+                }
+            }
+        }
+        for (MethodContext m : mc.methods) {
+            if (m.toString() == name) {
+                System.out.println("Found " + classname + "." + methodname);
+                return m;
+            }
+        }
+        System.out.println("Could not find " + classname + "." + methodname);
+        return null;
+    }
+
 
     public List<ClassContext> getClassContext() {
         return classes;
     }
 
     public boolean add(ClassContext cd)  {
+        cd.setParent(this);
         return classes.add(cd);
     }
 
-    boolean find() {
-        return false;
+    // search all the classes we've found.
+    public String find(String name) {
+        System.out.println("Searching GoalContext");
+        for (ClassContext c : classes) {
+            if(c.toString() == name) {
+                System.out.println("\tFound class " + name);
+                return c.toString();
+            }
+        }
+        // search MainClass too
+        if (mc.toString() == name) {
+            System.out.println("\tFound class " + name);
+            return mc.toString();
+        }
+        System.out.println("\tNo class " + name + " found.");
+        return "ERROR";
     }
 
     // recursively verify this goal.

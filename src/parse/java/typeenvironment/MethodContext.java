@@ -17,12 +17,30 @@ public class MethodContext extends Context {
         return identifiers;
     }
 
+    // see if an identifier exists within this context.
+    // Return null on fail.
+    public Context getChildContext(String name) {
+        for (IdentifierContext c : this.identifiers) {
+            if (c.toString() == name) {
+                return c;
+            }
+        }
+        return null;
+    }
+
     public boolean add(IdentifierContext c) {
         c.setParent(this);
         return identifiers.add(c);
     }
 
+    // this is just a method so pass it up.
+    public MethodContext getClassMethodContext(String classname, String methodname) {
+        return this.parent.getClassMethodContext(classname, methodname);
+    }
+
+
     public String find(String name) {
+        System.out.println("Looking for " + name + " in " + this.toString());
         if (this.name == name)
             return type;
 

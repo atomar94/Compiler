@@ -3,6 +3,12 @@ package visitor;
 import syntaxtree.*;
 import typeenvironment.*;
 
+
+/*
+ * This visitor traverses the AST and TypeChecks. We assume that
+ * the context passed in already has been populated with the variable,
+ * method, and class declarations.
+ */
 public class ASTContextVisitors extends GJDepthFirst<String, Context> {
 
     public void ASTContextVisitors() {
@@ -32,25 +38,18 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
      * f17 -> "}"
      */
     public String visit(MainClass mc, Context context) {
-        // get classname, create a ClassContext, and add it to parent context.
+        // get the mainClass context, then the MainMethod context.
         String classname = mc.f1.accept(this, context).toString();
-        MainClassContext cContext = new MainClassContext(classname);
-        context.add(cContext);
-
-        // main method is not tokenized like other methods so we need to add it
-        // to the context manually.
-        MethodContext mainMethodContext = new MethodContext(mc.f6.toString(), "void");
-        cContext.add(mainMethodContext);
-
-        // get parameter name, create IdentifierContext, and add it to the main method context.
-        String parametername = mc.f11.accept(this, mainMethodContext).toString();
-        IdentifierContext param = new IdentifierContext(parametername, "String");
-        mainMethodContext.add(param);
-
-        // we don't need to worry about this because VarDeclarations append to the context for us!
-        if(mc.f14.accept(this, mainMethodContext) == "ERROR") {
+        Context mainClassContext = context.getChildContext(classname);
+        if (mainClassContext == null) {
             return "ERROR";
         }
+        Context mainMethodContext = mainClassContext.getChildContext("main");
+        if (mainMethodContext == null) {
+            return "ERROR";
+        }
+
+        // use the mainmethod context to type check the statements within main method.
         if(mc.f15.accept(this, mainMethodContext) == "ERROR") {
             return "ERROR";
         }
@@ -69,14 +68,18 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
      */
     public String visit(ClassDeclaration cd, Context context) {
         String classname = cd.f1.accept(this, context).toString();
-        ClassContext cContext = new ClassContext(classname);
-        context.add(cContext);
 
-        // dont care about retval because we add things to context inside of here.
-        if(cd.f3.accept(this, cContext) == "ERROR") {
+        // this should be a class context.
+        Context cContext = context.getChildContext(classname);
+
+        // if we cant find this class then we have failed the TypeChecker,
+        if (cContext == null) {
+            context.typeFailed();
             return "ERROR";
         }
+
         if(cd.f4.accept(this, cContext) == "ERROR") {
+            context.typeFailed();
             return "ERROR";
         }
 
@@ -102,14 +105,18 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
     public String visit(MethodDeclaration md, Context context) {
         String methodtype = md.f1.accept(this, context);
         String methodname = md.f2.accept(this, context);
-        MethodContext mContext = new MethodContext(methodname, methodtype);
-        context.add(mContext);
 
-        // vardeclarations add themselves to context.
-        if(md.f7.accept(this, mContext) == "ERROR") {
+        // this should be a method context.
+        Context mContext = context.getChildContext(methodname);
+
+        // this cant fail because we must have added this method to context
+        // before but lets check anyway because we are good coders who use
+        // defensive coding practices.
+        if (mContext == null) {
             context.typeFailed();
             return "ERROR";
         }
+
         // statements
         if(md.f8.accept(this, mContext) == "ERROR") {
             context.typeFailed();
@@ -167,6 +174,7 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
         String exprType = ne.f1.accept(this, context);
         if (exprType != "boolean") {
             context.typeFailed();
+            System.out.println("NotExpression failed");
             return "ERROR";
         }
         return "boolean";
@@ -195,50 +203,6 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
         return t.f0.accept(this, context);
     }
 
-    /**
-     * Grammar production:
-     * f0 -> FormalParameter()
-     * f1 -> ( FormalParameterRest() )*
-     */
-    public String visit(FormalParameterList fpl, Context context) {
-        // FormalParameter will add itself to the context.
-        fpl.f0.accept(this, context);
-        fpl.f1.accept(this, context);
-
-        return "";
-    }
-
-    /**
-     * Grammar production:
-     * f0 -> Type()
-     * f1 -> Identifier()
-     */
-    // This adds to the context. we return "" because a FP does not have a type.
-    // the thing it declared does but the statement itself does not.
-    public String visit(FormalParameter fp, Context context) {
-        String type = fp.f0.accept(this, context);
-        String name = fp.f1.accept(this, context);
-        IdentifierContext id = new IdentifierContext(name, type);
-        context.add(id);
-
-        return "";
-    }
-
-    /**
-     * Grammar production:
-     * f0 -> ","
-     * f1 -> FormalParameter()
-     */
-    public String visit(FormalParameterRest fpr, Context context) {
-        // formalParameter adds itself to context.
-        fpr.f1.accept(this, context);
-
-        // return "" because a FPR does not have a type itself, it only declares
-        // identifiers with types and adds them to context.
-        return "";
-    }
-
-
     // return the name of the identifier.
     public String visit(Identifier id, Context context) {
         return id.f0.toString();
@@ -246,18 +210,40 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
 
     /**
      * Grammar production:
-     * f0 -> Type()
-     * f1 -> Identifier()
-     * f2 -> ";"
+     * f0 -> "if"
+     * f1 -> "("
+     * f2 -> Expression()
+     * f3 -> ")"
+     * f4 -> Statement()
+     * f5 -> "else"
+     * f6 -> Statement()
      */
-    // return "" because we add things to context.
-    public String visit(VarDeclaration cd, Context context) {
-        String type = cd.f0.accept(this, context);
-        String idname = cd.f1.accept(this, context);
+    public String visit(IfStatement is, Context context) {
+        String conditionType = is.f2.accept(this, context);
+        if (conditionType != "boolean") {
+            System.out.println("IfStatement failed.");
+            context.typeFailed();
+        }
+        is.f4.accept(this, context);
+        is.f6.accept(this, context);
+        return "";
+    }
 
-        IdentifierContext var = new IdentifierContext(idname, type);
-        context.add(var);
-
+    /**
+     * Grammar production:
+     * f0 -> "while"
+     * f1 -> "("
+     * f2 -> Expression()
+     * f3 -> ")"
+     * f4 -> Statement()
+     */
+    public String visit(WhileStatement ws, Context context) {
+        String conditionType = ws.f2.accept(this, context);
+        if (conditionType != "boolean") {
+            System.out.println("WhileStatement failed.");
+            context.typeFailed();
+        }
+        ws.f4.accept(this, context);
         return "";
     }
 
@@ -279,6 +265,27 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
 
     /**
      * Grammar production:
+     * f0 -> PrimaryExpression()
+     * f1 -> "."
+     * f2 -> Identifier()
+     * f3 -> "("
+     * f4 -> ( ExpressionList() )?
+     * f5 -> ")"
+     */
+    public String visit(MessageSend ms, Context context) {
+        String primaryExpressionType = ms.f0.accept(this, context);
+        String methodName = ms.f2.accept(this, context);
+
+        MethodContext primaryExpressionMethodContext = context.getClassMethodContext(primaryExpressionType, methodName);
+        if (primaryExpressionMethodContext == null) {
+            return "ERROR";
+        }
+        return primaryExpressionMethodContext.toType();
+        // TODO methods need to be overloadable.
+    }
+
+    /**
+     * Grammar production:
      * f0 -> IntegerLiteral()
      *       | TrueLiteral()
      *       | FalseLiteral()
@@ -293,6 +300,7 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
     public String visit(PrimaryExpression pe, Context context) {
         String ret = pe.f0.accept(this, context);
         if (ret == "ERROR") {
+            System.out.println("PrimaryExpression failed");
             context.typeFailed();
             return "ERROR";
         }
@@ -301,12 +309,61 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
         if (pe.f0.choice instanceof Identifier) {
             ret = context.find(ret);
             if (ret == "ERROR") {
+                System.out.println("PrimaryExpression failed");
                 context.typeFailed();
                 return ret;
             }
         }
 
         return ret;
+    }
+
+    /**
+     * Grammar production:
+     * f0 -> PrimaryExpression()
+     * f1 -> "["
+     * f2 -> PrimaryExpression()
+     * f3 -> "]"
+     */
+    public String visit(ArrayLookup al, Context context) {
+        String arrayType = al.f0.accept(this, context);
+        String indexType = al.f2.accept(this, context);
+
+        if (arrayType != "int[]" || indexType != "int") {
+            System.out.println("ArrayLookup failed with array:" + 
+                arrayType + " and index:" + indexType);
+            context.typeFailed();
+            return null;
+        }
+        return "int";
+    }
+
+    /**
+     * Grammar production:
+     * f0 -> "System.out.println"
+     * f1 -> "("
+     * f2 -> Expression()
+     * f3 -> ")"
+     * f4 -> ";"
+     */
+    public String visit(PrintStatement ps, Context context) {
+        String exprType = ps.f2.accept(this, context);
+        if (exprType == "int") {
+            return "";
+        }
+        System.out.println("PrintStatement failed.");
+        context.typeFailed();
+        return null;
+    }
+
+    /**
+     * Grammar production:
+     * f0 -> "("
+     * f1 -> Expression()
+     * f2 -> ")"
+     */
+    public String visit(BracketExpression be, Context context) {
+        return be.f1.accept(this, context);
     }
 
     public String visit(NodeChoice nc, Context context) {
@@ -328,6 +385,7 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
         }
         else {
             context.typeFailed();
+            System.out.println("AndExpression failed");            
             return "ERROR";
         }
     }
@@ -345,6 +403,7 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
         if (T1 == "int" && T2 == "int") {
             return "boolean";
         }
+        System.out.println("CompareExpression failed");
         context.typeFailed();
         return "ERROR";
     }
@@ -362,6 +421,7 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
         if (T1 == "int" && T2 == "int") {
             return "int";
         }
+        System.out.println("PlusExpression failed");
         context.typeFailed();
         return "ERROR";
     }
@@ -381,6 +441,7 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
             return "int";
         }
         context.typeFailed();
+        System.out.println("Minus failed");
         return "ERROR";
     }
 
@@ -397,6 +458,7 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
         if (T1 == "int" && T2 == "int") {
             return "int";
         }
+        System.out.println("TimesExpression failed");
         context.typeFailed();
         return "ERROR";
     }
@@ -413,6 +475,7 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
         String expression_type = as.f2.accept(this, context);
 
         if (identifier_type == "ERROR" || expression_type == "ERROR") {
+            System.out.println("AssignmentStatement failed.");
             context.typeFailed();
             return "ERROR";
         }
@@ -421,6 +484,9 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
             return "";
         }
         else {
+            System.out.println("AssignmentStatement failed. LHS is " +
+                identifier_type + " and RHS is " + expression_type + 
+                " within context " + context.toString());
             context.typeFailed();
             return "ERROR";
         }

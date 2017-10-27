@@ -15,6 +15,10 @@ public abstract class Context {
         typeCheckFailed = false;
     }
 
+    public Context getChildContext(String name) {
+        return null;
+    }
+
     public void typeFailed() {
         typeCheckFailed = true;
     }
@@ -25,6 +29,10 @@ public abstract class Context {
 
     public void setParent(Context parent) {
         this.parent = parent;
+    }
+
+    public MethodContext getClassMethodContext(String classname, String methodname) {
+        return null;
     }
 
     public String toString() {

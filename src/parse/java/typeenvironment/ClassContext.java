@@ -5,9 +5,8 @@ import java.util.*;
 /** The typechecker for F.
 m*/
 public class ClassContext extends Context{
-    Context parent;
-    List<MethodContext> methods;
-    List<IdentifierContext> identifiers;
+    public List<MethodContext> methods;
+    public List<IdentifierContext> identifiers;
     
     public ClassContext(String class_name) {
         // the name of this class is the type!
@@ -24,6 +23,20 @@ public class ClassContext extends Context{
     public List<IdentifierContext> getIdentifierContext() {
         return identifiers;
     }
+
+    public MethodContext getClassMethodContext(String classname, String methodname) {
+        if (classname == this.toString()) {
+            for (MethodContext m : methods) {
+                if (m.toString() == methodname) {
+                    return m;
+                }
+            }
+        } else {
+            return this.parent.getClassMethodContext(classname, methodname);
+        }
+        return null;
+    }
+
 
     // class has a more complicated isTypeFailed because we want to 
     // check the child methods. we dont have to, but we should for
@@ -45,6 +58,23 @@ public class ClassContext extends Context{
         return false;
     }
 
+    // see if an identifier exists within this context.
+    // Return null on fail.
+    public Context getChildContext(String name) {
+        for (IdentifierContext c : this.identifiers) {
+            if (c.toString() == name) {
+                return c;
+            }
+        }
+        for (MethodContext m : this.methods) {
+            if (m.toString() == name) {
+                return m;
+            }
+        }
+        return null;
+    }
+
+
     public boolean add(MethodContext c) {
         c.setParent(this);
         return methods.add(c);
@@ -56,6 +86,7 @@ public class ClassContext extends Context{
     }
 
     public String find(String name) {
+        System.out.println("Looking for " + name + " in Class " + this.toString());
         // if we are tryingto find "this" then return the name of 
         // this class.
         if (name == "this") {
@@ -74,6 +105,13 @@ public class ClassContext extends Context{
             if (ret != "ERROR") {
                 return ret;
             }
+        }
+
+        // if our parent exists (it should) go search it.
+        if (this.parent != null) {
+            return this.parent.find(name);
+        } else {
+            System.out.println("Class parent (GoalContext) is null.");
         }
 
         // couldnt find the identifier in this class context, and this is the
