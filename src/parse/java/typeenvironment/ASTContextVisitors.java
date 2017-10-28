@@ -2,7 +2,7 @@ package visitor;
 
 import syntaxtree.*;
 import typeenvironment.*;
-
+import java.util.*;
 
 /*
  * This visitor traverses the AST and TypeChecks. We assume that
@@ -165,6 +165,32 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
         return "int[]";
     }
 
+    // gonna get fancy (hacky) here. we are going to return all of the types
+    // not as a list, but as a string delineated by spaces.
+    public String visit(NodeListOptional nlo, Context context) {
+        String list_of_types = "";
+        String current_type = "";
+        for (int i = 0; i < nlo.size(); i++) {
+            current_type = nlo.elementAt(i).accept(this, context);
+            if (current_type == "ERROR") {
+                context.typeFailed();
+                return "ERROR";
+            }
+            else {
+                list_of_types = list_of_types + " " + current_type;
+            }
+        }
+        return list_of_types;
+    }
+
+    // if it has a node then visit it otherwise do nothing.
+    public String visit(NodeOptional no, Context context) {
+        if (no.present()) {
+            return no.node.accept(this, context);
+        }
+        return "";
+    }
+
     /**
      * Grammar production:
      * f0 -> "!"
@@ -276,12 +302,72 @@ public class ASTContextVisitors extends GJDepthFirst<String, Context> {
         String primaryExpressionType = ms.f0.accept(this, context);
         String methodName = ms.f2.accept(this, context);
 
+        // returns the method context from within that class type.
         MethodContext primaryExpressionMethodContext = context.getClassMethodContext(primaryExpressionType, methodName);
         if (primaryExpressionMethodContext == null) {
+            context.typeFailed();
             return "ERROR";
         }
+        // this is going to be a list of types, delineated by spaces.
+        // lets parse it and see what happens.
+        String type_list = ms.f4.accept(this, context);
+        ArrayList<String> calling_parameter_type_list = new ArrayList(Arrays.asList(type_list.trim().split("\\s+")));
+
+        // get rid of any empty strings (trim does not do this for us unfortunately)
+        if (calling_parameter_type_list.size() >= 0) {
+            if (calling_parameter_type_list.get(0).equals("")) {
+                calling_parameter_type_list.remove(0);
+            }
+        }
+
+        // we are trying to call a method with an incorrect number of arguments!
+        if (calling_parameter_type_list.size() != primaryExpressionMethodContext.getParameterTypes().size()) {
+           context.typeFailed();
+            return "ERROR";
+        }
+        for (int i = 0; i < calling_parameter_type_list.size(); i++) {
+            String calling_param =  calling_parameter_type_list.get(i);
+            String method_param = primaryExpressionMethodContext.getParameterTypes().get(i);
+            // if they don't match
+            if (!calling_param.equals(method_param)) {
+                System.out.println("(" + calling_param + ") != (" + method_param + ")");
+                context.typeFailed();
+                return "ERROR";
+            }
+        }
+
         return primaryExpressionMethodContext.toType();
-        // TODO methods need to be overloadable.
+    }
+
+    /**
+     * Grammar production:
+     * f0 -> Expression()
+     * f1 -> ( ExpressionRest() )*
+     */
+    public String visit(ExpressionList el, Context context) {
+        String expr_type = el.f0.accept(this, context);
+        if (expr_type == "ERROR") {
+            context.typeFailed();
+            return "ERROR";
+        }
+        // we are going to check this for errors in other functions
+        // because we dont want to parse it here.
+        expr_type += " " + el.f1.accept(this, context);
+        return expr_type;
+    }
+
+    /**
+     * Grammar production:
+     * f0 -> ","
+     * f1 -> Expression()
+     */
+    public String visit(ExpressionRest er, Context context) {
+        String expr_type = er.f1.accept(this, context);
+        if (expr_type == "ERROR") {
+            context.typeFailed();
+            return "ERROR";
+        }
+        return expr_type;
     }
 
     /**

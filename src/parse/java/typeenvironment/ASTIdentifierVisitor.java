@@ -124,7 +124,6 @@ public class ASTIdentifierVisitor extends GJDepthFirst<String, Context> {
      * f1 -> ( FormalParameterRest() )*
      */
     public String visit(FormalParameterList fpl, Context context) {
-        System.out.println("FormalParameterList called");
         // FormalParameter will add itself to the context.
         fpl.f0.accept(this, context);
         // NodeListOptional
@@ -152,11 +151,14 @@ public class ASTIdentifierVisitor extends GJDepthFirst<String, Context> {
     // This adds to the context. we return "" because a FP does not have a type.
     // the thing it declared does but the statement itself does not.
     public String visit(FormalParameter fp, Context context) {
-        System.out.println("FormalParameter called");
         String type = fp.f0.accept(this, context);
         String name = fp.f1.accept(this, context);
         IdentifierContext id = new IdentifierContext(name, type);
         context.add(id);
+        // we also want to add formal parameters to the parameter list for
+        // this method. FormalParameter is only a thing when we declare methods (i hope)
+        // so we can assume that context is a MethodContext
+        context.addParameterType(type);
 
         return "";
     }
@@ -175,6 +177,13 @@ public class ASTIdentifierVisitor extends GJDepthFirst<String, Context> {
         return "";
     }
 
+    // if it has a node then visit it and return its type otherwise do nothing.
+    public String visit(NodeOptional no, Context context) {
+        if (no.present()) {
+            context.addParameterType(no.node.accept(this, context));
+        }
+        return "";
+    }
 
     // return the name of the identifier.
     public String visit(Identifier id, Context context) {

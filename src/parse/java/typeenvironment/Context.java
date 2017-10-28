@@ -1,5 +1,7 @@
 package typeenvironment;
 
+import java.util.*;
+
 /** The typechecker for F.
 m*/
 public abstract class Context {
@@ -18,6 +20,21 @@ public abstract class Context {
     public Context getChildContext(String name) {
         return null;
     }
+
+    // we need this to be polymorphic because we don't know the type of
+    // context we have so we need to be able to call it on any context
+    // object. The default behavior is do nothing.
+    public void addParameterType(String type) {
+        return;
+    }
+
+    // we need this to be polymorphic because we don't know the type of
+    // context we have so we need to be able to call it on any context
+    // object. The default behavior is do nothing.
+    public ArrayList<String> getParameterTypes() {
+        return null;
+    }
+
 
     public void typeFailed() {
         typeCheckFailed = true;

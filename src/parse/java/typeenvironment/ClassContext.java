@@ -50,7 +50,6 @@ public class ClassContext extends Context{
             // didnt end up propagating upwards.
             for (MethodContext m : methods) {
                 if (m.isTypeFailed()) {
-                    System.out.println("Method " + m.toString() + " fail");
                     return true;
                 }
             }
@@ -86,7 +85,6 @@ public class ClassContext extends Context{
     }
 
     public String find(String name) {
-        System.out.println("Looking for " + name + " in Class " + this.toString());
         // if we are tryingto find "this" then return the name of 
         // this class.
         if (name == "this") {
@@ -110,10 +108,7 @@ public class ClassContext extends Context{
         // if our parent exists (it should) go search it.
         if (this.parent != null) {
             return this.parent.find(name);
-        } else {
-            System.out.println("Class parent (GoalContext) is null.");
         }
-
         // couldnt find the identifier in this class context, and this is the
         // highest context there is (until we check inheritance)
         return "ERROR";

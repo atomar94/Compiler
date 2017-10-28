@@ -7,14 +7,38 @@ import java.util.*;
 m*/
 public class MethodContext extends Context {
     List<IdentifierContext> identifiers;
+    ArrayList<String> parameterTypes;
 
     public MethodContext(String method_name, String type) {
         super(method_name, type);
         this.identifiers = new ArrayList<IdentifierContext>();
+        this.parameterTypes = new ArrayList<String>();
     }
 
     public List<IdentifierContext> getIdentifierContext() {
         return identifiers;
+    }
+
+    // adds the Type of a parameter to the parameter list so when we
+    // call the object we know what types to look for.
+    // this is an ordered list. 
+    public void addParameterType(String type) {
+        // dont add empty stuff here.
+        if (type == "") {
+            return;
+        }
+        System.out.println("Adding param:" + type + " to " + this.toString());
+        parameterTypes.add(type);
+    }
+
+    // return an ordered list of the parameter types we expect for this
+    // function when called.
+    public ArrayList<String> getParameterTypes() {
+        System.out.println("Fetching " + toString() + " parameter list. We've found ");
+        for (String s : parameterTypes) {
+            System.out.println("\t" + s);
+        }
+        return parameterTypes;
     }
 
     // see if an identifier exists within this context.
@@ -40,7 +64,7 @@ public class MethodContext extends Context {
 
 
     public String find(String name) {
-        System.out.println("Looking for " + name + " in " + this.toString());
+        //System.out.println("Looking for " + name + " in " + this.toString());
         if (this.name == name)
             return type;
 
