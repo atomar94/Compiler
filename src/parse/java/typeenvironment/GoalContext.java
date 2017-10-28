@@ -129,4 +129,51 @@ public class GoalContext extends Context {
         }
         return true;
     }
+
+    // check for cycles
+    public boolean acyclicSuperClasses() {
+
+        // the key is the child and the value is the parent.
+        HashMap<String, String> hm = new HashMap<String, String>();
+
+        // populate our hash map.
+        for (ClassContext c : classes) {
+            if (!c.getSuperClass().equals("")) {
+                hm.put(c.toString(), c.getSuperClass());
+            }
+        }
+        for (ClassContext c : classes) {
+            ArrayList<String> visited = new ArrayList<String>();
+            String current_node = c.toString();
+
+            // if the HM has an inheritance value for this class
+            // find it and mark it visited and then visit it's parent.
+            while (hm.containsKey(current_node)) {
+                current_node = hm.get(current_node);
+
+                // if we've already visited this node then we 
+                // have a cycle.
+                if (visited.contains(current_node)) {
+                    return false;
+                }
+                visited.add(current_node);
+            }
+        }
+        return true;
+
+    }
+
+    // do all superclasses exist
+    public boolean validSuperClasses() {
+        for (ClassContext c : classes) {
+            // if this class has a super class
+            if (c.getSuperClass() != "") {
+                // if this super class doesn't exist fail
+                if (! this.find(c.getSuperClass()).equals(c.getSuperClass())) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

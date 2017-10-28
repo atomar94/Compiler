@@ -87,6 +87,37 @@ public class ASTIdentifierVisitor extends GJDepthFirst<String, Context> {
 
     /**
      * Grammar production:
+     * f0 -> "class"
+     * f1 -> Identifier()
+     * f2 -> "extends"
+     * f3 -> Identifier()
+     * f4 -> "{"
+     * f5 -> ( VarDeclaration() )*
+     * f6 -> ( MethodDeclaration() )*
+     * f7 -> "}"
+     */
+    public String visit(ClassExtendsDeclaration ced, Context context) {
+        String classname = ced.f1.accept(this, context).toString();
+        ClassContext cContext = new ClassContext(classname);
+        context.add(cContext);
+
+        // inherited class
+        cContext.setSuperClass(ced.f3.accept(this, cContext));
+
+        // vardecl
+        if(ced.f5.accept(this, cContext) == "ERROR") {
+            return "ERROR";
+        }
+        // MethodDecl
+        if(ced.f6.accept(this, cContext) == "ERROR") {
+            return "ERROR";
+        }
+
+        return ""; 
+    }
+
+    /**
+     * Grammar production:
      * f0 -> "public"
      * f1 -> Type()
      * f2 -> Identifier()

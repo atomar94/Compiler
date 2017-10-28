@@ -55,6 +55,12 @@ public class Typecheck extends GJDepthFirst<Type, Map<String, Type>>{
         } else {
             System.out.println("Declarations not distinct");
         }
+        if (c.validSuperClasses() && c.acyclicSuperClasses()) {
+          System.out.println("Superclasses exist and are acyclic");
+        }
+        else {
+          System.out.println("Superclasses malformed.");
+        }
         // debug printouts
         /*
         ClassContext mcc = c.getMainClassContext();

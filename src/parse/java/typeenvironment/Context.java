@@ -17,8 +17,19 @@ public abstract class Context {
         typeCheckFailed = false;
     }
 
+
+
     public Context getChildContext(String name) {
         return null;
+    }
+
+    // only ClassContext will implement this.
+    public void setSuperClass(String superclass) {
+        return;
+    }
+
+    public String getSuperClass() {
+        return "";
     }
 
     // we need this to be polymorphic because we don't know the type of

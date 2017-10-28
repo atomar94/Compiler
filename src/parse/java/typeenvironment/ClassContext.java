@@ -7,13 +7,24 @@ m*/
 public class ClassContext extends Context{
     public List<MethodContext> methods;
     public List<IdentifierContext> identifiers;
+    public String superClass;
     
     public ClassContext(String class_name) {
         // the name of this class is the type!
         super(class_name, class_name);
-        parent = null;
+        this.parent = null; // parent context
         this.methods = new ArrayList<MethodContext>();
         this.identifiers = new ArrayList<IdentifierContext>();
+        this.superClass = ""; // parent (inherited) class
+    }
+
+    public String getSuperClass() {
+        return this.superClass;
+    }
+
+    // set the superclass for this class.
+    public void setSuperClass(String superclass) {
+        this.superClass = superclass;
     }
 
     public List<MethodContext> getMethodContext() {
